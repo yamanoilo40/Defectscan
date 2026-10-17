@@ -61,3 +61,5 @@ input[type=range]{width:100%;accent-color:var(--accent);height:32px}
 .disclaimer{margin:18px 0 0;padding-top:14px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
 #timeline{width:100%;height:70px;display:block;background:var(--panel2);border-radius:10px}
 [hidden]{display:none!important}
+
+.diag{margin:12px 0 0;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,93,93,.45);background:rgba(255,93,93,.08);color:#ffb4b4;font-size:13px;word-break:break-word}

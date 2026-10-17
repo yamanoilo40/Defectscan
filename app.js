@@ -14,21 +14,37 @@ const params = new URLSearchParams(location.search);
 
 /* ---------- загрузка модели ---------- */
 async function loadModel(){
-  const badge = $('#modelBadge');
+  const badge = $('#modelBadge'), diag = $('#diag');
+  const fail = (short, detail) => { badge.textContent = short; badge.className = 'badge err'; $('#vText').textContent = short;
+    diag.textContent = detail; diag.hidden = false; cfg = null; session = null; };
+  let stage = 'старт';
   try{
     if(params.has('selftest')){          // только для отладки интерфейса, НЕ настоящая модель
       cfg = {classes:['ok','corrosion'], normal:'ok', size:64, mean:[0,0,0], std:[1,1,1], grid:4};
       mock = true; badge.textContent = 'ТЕСТОВЫЙ РЕЖИМ (не ИИ)'; badge.className='badge err'; return;
     }
-    cfg = await (await fetch('model/labels.json', {cache:'no-cache'})).json();
+    stage = 'библиотека ONNX';
+    if(typeof ort === 'undefined') return fail('Не загрузилась библиотека ИИ',
+      'Файл onnxruntime-web с cdn.jsdelivr.net не скачался. Нужен интернет при первом запуске: проверьте соединение, отключите VPN/блокировщик рекламы и обновите страницу.');
+    stage = 'labels.json';
+    let r = await fetch('model/labels.json', {cache:'no-cache'});
+    if(!r.ok) return fail('Нет файла labels.json', 'model/labels.json: ошибка HTTP '+r.status+'. Файл должен лежать в папке model рядом с index.html и называться ровно labels.json (не «labels (1).json»).');
+    cfg = await r.json();
+    if(!Array.isArray(cfg.classes) || !cfg.classes.includes(cfg.normal)) return fail('Некорректный labels.json', 'В файле должны быть поля classes и normal (класс «ok»). Возьмите labels.json, который скачал блокнот после обучения.');
+    stage = 'model.onnx';
+    r = await fetch('model/model.onnx?v=' + encodeURIComponent(cfg.version || Date.now()), {cache:'no-cache'});   // версия в адресе: новая модель скачается сама
+    if(!r.ok) return fail('Нет файла model.onnx', 'model/model.onnx: ошибка HTTP '+r.status+'. Файл должен лежать в папке model и называться ровно model.onnx (браузер мог сохранить его как «model (1).onnx» — переименуйте).');
+    const buf = new Uint8Array(await r.arrayBuffer());
+    if(buf.byteLength < 200000) return fail('Файл model.onnx повреждён', 'Размер '+buf.byteLength+' байт — слишком мало (ожидается ~20 МБ). Файл загрузился не полностью: скачайте его из Colab заново.');
+    stage = 'запуск модели';
     ort.env.wasm.numThreads = 1;
-    session = await ort.InferenceSession.create('model/model.onnx', {executionProviders:['wasm'], graphOptimizationLevel:'all'});
-    badge.textContent = 'Модель готова · работает офлайн'; badge.className = 'badge ok';
+    session = await ort.InferenceSession.create(buf, {executionProviders:['wasm'], graphOptimizationLevel:'all'});
+    if(typeof cfg.threshold === 'number'){        // порог, подобранный при обучении
+      const t = Math.min(0.9, Math.max(0.2, cfg.threshold)); state.thr = t; $('#thr').value = Math.round(t*100); $('#thrV').textContent = Math.round(t*100)+'%'; }
+    badge.textContent = 'Модель готова · работает офлайн'; badge.className = 'badge ok'; diag.hidden = true;
   }catch(e){
     console.error(e);
-    badge.textContent = 'Модель не найдена'; badge.className = 'badge err';
-    $('#vText').textContent = 'Положите model.onnx в папку model/';
-    cfg = null;
+    fail('Не удалось загрузить модель', 'Этап «'+stage+'»: '+(e && e.message ? e.message : e));
   }
 }
 
@@ -178,7 +194,7 @@ function drawTimeline(){
 }
 async function onVideo(file){
   if(!file) return; if(!cfg){alert('Модель не загружена.');return;}
-  resetUI(); show('video'); const v=$('#vid'); v.src=URL.createObjectURL(file);
+  resetUI(); show('video'); const v=$('#vid'); v.controls=true; v.src=URL.createObjectURL(file);
   await new Promise(r=>v.onloadedmetadata=r); setFrame(v.videoWidth,v.videoHeight); state.el=v;
   v.play().catch(()=>{}); startLoop();
 }
