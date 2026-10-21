@@ -1,1 +1,1 @@
-{"classes": ["corrosion", "ok"], "normal": "ok", "size": 224, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225], "grid": 5, "threshold": 0.8, "version": "20261017115441"}
+{"classes": ["corrosion", "ok"], "normal": "ok", "size": 224, "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225], "grid": 5, "threshold": 0.85, "version": "20261021130518"}
