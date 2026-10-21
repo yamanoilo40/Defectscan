@@ -5,7 +5,9 @@
 const $ = s => document.querySelector(s);
 const NAMES = { ok:'Норма', normal:'Норма', good:'Норма', corrosion:'Коррозия', rust:'Коррозия', crack:'Трещина',
   dent:'Вмятина', scratch:'Царапина', pitting:'Питтинг', coating:'Дефект покрытия', paint:'Дефект покрытия',
-  weld:'Дефект сварки', leak:'Течь', deformation:'Деформация' };
+  weld:'Дефект сварки', leak:'Течь', deformation:'Деформация',
+  crazing:'Сетка трещин', patches:'Пятна', inclusion:'Включения', pitted_surface:'Питтинг', 'rolled-in_scale':'Прокатная окалина',
+  scratches:'Царапины', porosity:'Пористость', spatter:'Брызги', undercut:'Подрез', crack_weld:'Трещина шва', welding_crack:'Трещина шва' };
 const ruName = c => NAMES[c.toLowerCase()] || c;
 
 let cfg = null, session = null, mock = false;
